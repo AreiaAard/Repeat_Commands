@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE muclient>
+
+<muclient>
+<plugin
+   name="Repeat_Commands"
+   author="Areia"
+   id="b7fed72f3de3ab87b4f7bab3"
+   language="Lua"
+   purpose="Execute a command multiple times"
+   save_state="n"
+   date_written="2020-11-24 02:30:00"
+   requires="5.07"
+   version="1.0"
+   >
+<description trim="y">
+<![CDATA[
+]]>
+</description>
+
+</plugin>
+
+<include name="constants.lua"/>
+
+
+
+<aliases>
+    <alias
+     match="^\#(?<stop>\d+)(?:,w(?<delay>\d*\.?\d+))?\s+(?<command>.+?)$"
+     enabled="y"
+     script="repeat_command"
+     regexp="y"
+     ignore_case="y"
+     sequence="100"
+    >
+    </alias>
+    <alias
+     match="^\#(?<start>\d+),(?<stop>\d+)(?:,w(?<delay>\d*\.?\d+))?\s+(?<command>.+?)$"
+     enabled="y"
+     script="repeat_command"
+     regexp="y"
+     ignore_case="y"
+     sequence="100"
+    >
+    </alias>
+    <alias
+     match="^\#(?<start>\d+),(?<stop>\d+),(?<step>-?\d+)(?:,w(?<delay>\d*\.?\d+))?\s+(?<command>.+?)$"
+     enabled="y"
+     script="repeat_command"
+     regexp="y"
+     ignore_case="y"
+     sequence="100"
+    >
+    </alias>
+</aliases>
+
+
+
+<triggers>
+</triggers>
+
+
+
+<script>
+<![CDATA[
+require "wait"
+
+function repeat_command(alias, line, wc)
+    -- First make sure user isn't trying any funny business with nested loops.
+    -- More for the user's sake than anything...
+    if (wc.command:match("^#%d")) then
+        ColourNote("silver", "black", "Unable to nest command repetition.")
+        return
+    end
+    local start = wc.start and tonumber(wc.start) or 1
+    local stop = tonumber(wc.stop) -- We always get at least this from the user
+    -- If user gives step, use it. Otherwise, default to 1 if start < stop or -1 if start > stop
+    local step = wc.step and tonumber(wc.step) or start < stop and 1 or -1
+    local delay = wc.delay ~= "" and tonumber(wc.delay) or false
+    wait.make(function()
+        for i = start, stop, step do
+            Execute(wc.command:gsub("#", i)) -- Replace '#' with the value of `i`
+            if (delay) then
+                wait.time(delay)
+            end
+        end
+    end)
+end
+
+function OnPluginInstall()
+    ColourNote("silver", "black", "Usage: ", "yellow", "", "#[<start>,]stop[,<step>][,w<wait>] <command>")
+    ColourNote("silver", "black", "<start> is the value at which the loop begins. Default is 1.")
+    ColourNote("silver", "black", "<stop> is the value at which the loop ends.")
+    ColourNote("silver", "black", "<step> is the increment by which the counter changes each iteration. Default is")
+    ColourNote("silver", "black", "    1 if <start> is less than <stop>, or -1 if it is greater (to count")
+    ColourNote("silver", "black", "    backwards).")
+    ColourNote("silver", "black", "<wait> is the number of seconds to pause between executing each command.")
+    ColourNote("silver", "black", "    Default is 0. Does not need to be a whole number (e.g., 1.5 and .2 are")
+    ColourNote("silver", "black", "    valid values).")
+    ColourNote("silver", "black", "Any instance of '#' within the command itself is replaced with the current")
+    ColourNote("silver", "black", "    value of the loop counter. (Note that this means you cannot nest loops ")
+    ColourNote("silver", "black", "    [e.g., by typing '#3 #5 say hello']. This is intentional.).")
+    ColourNote("silver", "black", "Use two semicolons (;;) to insert a literal semicolon within the command.")
+    ColourNote("silver", "black", "Examples")
+    ColourNote("silver", "black", "Say 'Hello' 3 times (most common usage).")
+    ColourNote("yellow", "black", "    #3 say Hello")
+    ColourNote("silver", "black", "Say '5', '4'... '1'.")
+    ColourNote("yellow", "black", "    #5,1 say #")
+    ColourNote("silver", "black", "Where 1.goblin, 2.goblin... 5.goblin with a 1-second wait in between.")
+    ColourNote("yellow", "black", "    #5,w1 where #.goblin")
+    ColourNote("silver", "black", "Say '2', '4', '6'... '20'.")
+    ColourNote("yellow", "black", "    #2,20,2 say #")
+    ColourNote("silver", "black", "get bread bag;eat bread 4 times with a short pause in between.")
+    ColourNote("yellow", "black", "    #4,w.5 get bread bag;;eat bread")
+end
+]]>
+</script>
+
+
+</muclient>
